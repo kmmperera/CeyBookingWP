@@ -9,13 +9,21 @@ Author: Your Name
 // Enqueue scripts and styles
 function sbp_enqueue_scripts() {
     wp_enqueue_style('sbp-style', plugin_dir_url(__FILE__) . 'assets/style.css');
-    wp_enqueue_script('sbp-script', plugin_dir_url(__FILE__) . 'assets/script.js', array('jquery'), null, true);
+    wp_enqueue_script('sbp-script', plugin_dir_url(__FILE__) . 'assets/script.js', array('jquery'), '1.0.3', true);
     wp_localize_script('sbp-script', 'sbp_ajax', array(
         'ajax_url' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('sbp_nonce')
     ));
 }
 add_action('wp_enqueue_scripts', 'sbp_enqueue_scripts');
+function my_admin_enqueue($hook) {
+  
+    wp_enqueue_style('sbp-style', plugin_dir_url(__FILE__) . 'assets/admin_styles.css');
+
+    wp_enqueue_script('my_custom_admin_script', plugin_dir_url(__FILE__) . 'assets/adminscripts.js',array('jquery'),'1.0.3',true);
+}
+
+add_action('admin_enqueue_scripts', 'my_admin_enqueue');
 
 
 //new code 
@@ -25,6 +33,8 @@ function sbp_admin_menu() {
     add_menu_page('Staff Booking', 'Staff Booking', 'manage_options', 'staff-booking', 'sbp_admin_page', 'dashicons-calendar', 26);
     add_submenu_page('staff-booking', 'Manage Staff', 'Manage Staff', 'manage_options', 'manage-staff', 'sbp_manage_staff_page');
     add_submenu_page('staff-booking', 'Manage Services', 'Manage Services', 'manage_options', 'manage-services', 'sbp_manage_services_page');
+    add_submenu_page('staff-booking', 'Working Hours', 'Working Hours', 'manage_options', 'manage-holidays', 'sbp_manage_holidays_page');
+
 }
 add_action('admin_menu', 'sbp_admin_menu');
 
@@ -89,6 +99,15 @@ function sbp_manage_staff_page() {
         $staff_name = sanitize_text_field($_POST['staff_name']);
         $wpdb->insert("{$wpdb->prefix}sbp_staff", ['name' => $staff_name]);
     }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_tables'])) {
+
+        sbp_uninstall();
+    }
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_tables'])) {
+        
+        sbp_create_tables();
+    }
     ?>
     <h1>Manage Staff</h1>
     <form method="post">
@@ -105,6 +124,16 @@ function sbp_manage_staff_page() {
         }
         ?>
     </ul>
+    <form method="post">
+    <button type="submit" name="delete_tables">
+        Delete Tables
+    </button>
+    </form>
+    <form method="post">
+    <button type="submit" name="create_tables">
+       Create Tables
+    </button>
+    </form>
     <?php
 }
 
@@ -113,7 +142,10 @@ function sbp_manage_services_page() {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sbp_add_service'])) {
         $staff_id = sanitize_text_field($_POST['staff_id']);
         $service_name = sanitize_text_field($_POST['service_name']);
-        $wpdb->insert("{$wpdb->prefix}sbp_services", ['staff_id' => $staff_id, 'service_name' => $service_name]);
+        $service_from=sanitize_text_field($_POST['from_date']);
+        $service_to=sanitize_text_field($_POST['to_date']);
+        $service_price=sanitize_text_field($_POST['service_price']);
+        $wpdb->insert("{$wpdb->prefix}sbp_services", ['staff_id' => $staff_id, 'service_name' => $service_name,'service_from' => $service_from,'service_to' => $service_to,'service_price' => $service_price]);
     }
     ?>
     <h1>Manage Services</h1>
@@ -130,14 +162,24 @@ function sbp_manage_services_page() {
         </select>
         <label for="service_name">Service Name:</label>
         <input type="text" id="service_name" name="service_name" required>
+        <label for="from_date">From:</label>
+        <input type="date" id="from_date" name="from_date" required>
+        <label for="to_date">To:</label>
+        <input type="date" id="to_date" name="to_date" required>
+        <label for="service_price">Price:</label>
+        <input type="number" id="service_price" name="service_price"   required>
+
+
         <button type="submit" name="sbp_add_service">Add Service</button>
     </form>
     <h2>Services</h2>
     <ul>
         <?php
+        $nodata="";
         $services = $wpdb->get_results("SELECT s.*, t.name AS staff_name FROM {$wpdb->prefix}sbp_services s JOIN {$wpdb->prefix}sbp_staff t ON s.staff_id = t.id");
         foreach ($services as $service) {
-            echo "<li>{$service->staff_name} - {$service->service_name}</li>";
+          
+            echo "<li>{$service->staff_name} - {$service->service_name} price: {$service->service_price}  </li>";
         }
         ?>
     </ul>
@@ -145,6 +187,164 @@ function sbp_manage_services_page() {
 }
 
 
+function sbp_manage_holidays_page(){
+
+ //   global $wpdb;
+
+    $special_holidays=get_option('special_holidays',array());
+
+    $cey_off_days=get_option('cey_off_days',array());
+
+    $interval_from_saved=get_option('interval_from_saved',array());
+
+    $interval_to_saved=get_option('interval_to_saved',array());
+
+    $opening_time_saved=get_option('opening_time_saved',array());
+
+    $closing_time_saved=get_option('closing_time_saved',array());
+
+                 
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['holiday_save'])) {
+
+
+      
+        if ( isset( $_POST['interval_from'] ) ) { 
+
+        $interval_from = sanitize_text_field($_POST['interval_from']);
+            update_option('interval_from_saved',$interval_from);
+            $interval_from_saved=get_option('interval_from_saved',array());
+
+        }
+
+        if ( isset( $_POST['interval_to'] ) ) { 
+        $interval_to = sanitize_text_field($_POST['interval_to']);
+
+            update_option('interval_to_saved',$interval_to);
+            $interval_to_saved=get_option('interval_to_saved',array());
+
+        }
+
+         if ( isset( $_POST['opening_time'] ) ) { 
+        $opening_time = sanitize_text_field($_POST['opening_time']);
+
+             update_option('opening_time_saved',$opening_time);
+             $opening_time_saved=get_option('opening_time_saved',array());
+
+
+         }
+
+         if ( isset( $_POST['closing_time'] ) ) { 
+        $closing_time = sanitize_text_field($_POST['closing_time']);
+
+         update_option('closing_time_saved',$closing_time);
+         $closing_time_saved=get_option('closing_time_saved',array());
+
+         }
+
+        if ( isset( $_POST['holiday_date-input'] ) ) {    
+                    // $holiday_array=$_POST['holiday_date-input'];
+                        $holiday_array = array_map( 'sanitize_text_field', $_POST['holiday_date-input'] );
+
+                                foreach($holiday_array as $holiday_single_key => $holiday_val){
+                                    $special_holidays[]= $holiday_val;
+                                }
+
+                                $special_holidays_updated=update_option('special_holidays',$special_holidays);
+
+          }                        
+        
+       if ( isset( $_POST['cey_off_days'] ) ) {            
+                $updated_off_days = array_map( 'sanitize_text_field', $_POST['cey_off_days'] );
+
+                        foreach($updated_off_days as $updated_off_day_key => $updated_off_day_val){
+                            $updated_off_days_for_save[]= $updated_off_day_val;
+                        }
+                           // update_option('cey_off_days',array());
+                            update_option( 'cey_off_days', $updated_off_days_for_save );
+                            $cey_off_days=get_option('cey_off_days',array());
+                  
+         }  
+         else {
+            // If no checkboxes are selected, save an empty array
+            update_option( 'cey_off_days', array() );
+            $cey_off_days=get_option('cey_off_days',array());
+            }       
+                  
+
+    }
+
+    ?>
+
+    <h1>This is holidy page</h1>
+
+    <form method="post">
+        <label for="interval_from">Lunch Break From:</label>
+        <input type="time" name="interval_from"  value="<?php echo isset($interval_from_saved) ? esc_attr($interval_from_saved) : ''; ?>"   >
+        <label for="interval_to">Lunch Break Till:</label>
+        <input type="time" name="interval_to"  value="<?php echo isset($interval_to_saved) ? esc_attr($interval_to_saved) : ''; ?>"  >
+       
+        <div id="holiday_date_container">
+
+            <h2>Choose a holiday</h2>
+
+            <div id="add_hoiday_btn" name="add_holiday">
+                Add a Holiday
+            </div>
+        
+        </div>
+        <div id="special_hodilays_container_div">
+             <h2> Added Holidays so far</h2>
+            <?php 
+                foreach($special_holidays as $special_holiday){
+                    ?>
+                        <div class="special_hodilay" name="special_hodilay[]">
+                        <?php    echo $special_holiday; ?>
+                        </div>
+            <?php    }
+            ?>
+        </div>
+        <div class="opeing-closing">
+        <h2>Opening Closing Hours</h2>
+                <label for="opening_time">Opening Time:</label>
+                <input type="time" name="opening_time"  value="<?php echo isset($opening_time_saved) ? esc_attr($opening_time_saved) : ''; ?>"  >
+                <label for="closing_time">Closing Time:</label>
+                <input type="time" name="closing_time" value="<?php echo isset($closing_time_saved) ? esc_attr($closing_time_saved) : ''; ?>"   >
+
+
+        </div>
+        <div class="off-days">
+                    <h2>Off days</h2>
+                <input type="checkbox" id="cey_sunday_off" name="cey_off_days[]" value="sunday" <?php echo in_array('sunday', $cey_off_days) ? 'checked' : ''; ?>>
+                <label for="cey_sunday_off">Sunday</label><br>
+
+                <input type="checkbox" id="cey_monday_off" name="cey_off_days[]" value="monday" <?php echo in_array('monday', $cey_off_days) ? 'checked' : ''; ?>  >
+                <label for="cey_monday_off">Monday</label><br>
+
+                <input type="checkbox" id="cey_teusday_off" name="cey_off_days[]" value="teusday" <?php echo in_array('teusday', $cey_off_days) ? 'checked' : ''; ?>  >
+                <label for="cey_teusday_off">Teusday</label><br>
+
+                <input type="checkbox" id="cey_wednesday_off" name="cey_off_days[]" value="wednesday" <?php echo in_array('wednesday', $cey_off_days) ? 'checked' : ''; ?> >
+                <label for="cey_wednesday_off">Wednesday</label><br>
+
+                <input type="checkbox" id="cey_thursday_off" name="cey_off_days[]" value="thursday" <?php echo in_array('thursday', $cey_off_days) ? 'checked' : ''; ?> >
+                <label for="cey_thursday_off">Thursday</label><br>
+
+                <input type="checkbox" id="cey_friday_off" name="cey_off_days[]" value="friday" <?php echo in_array('friday', $cey_off_days) ? 'checked' : ''; ?> >
+                <label for="cey_friday_off">Friday</label><br>
+
+                <input type="checkbox" id="cey_saturday_off" name="cey_off_days[]" value="saturday" <?php echo in_array('saturday', $cey_off_days) ? 'checked' : ''; ?>   >
+                <label for="cey_saturday_off">Saturday</label><br>
+
+
+        </div>
+        <button type="submit" name="holiday_save">
+            Save
+        </button>
+    </form>
+
+    <?php
+}
 
 //end new code 
 
@@ -174,6 +374,9 @@ function sbp_create_tables() {
         id mediumint(9) NOT NULL AUTO_INCREMENT,
         staff_id mediumint(9) NOT NULL,
         service_name tinytext NOT NULL,
+        service_from date NOT NULL,
+        service_to date NOT NULL,
+        service_price mediumint(9) NOT NULL,
         UNIQUE KEY id (id)
     ) $charset_collate;
 
