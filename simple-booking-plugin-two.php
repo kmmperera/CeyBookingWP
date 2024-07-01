@@ -8,8 +8,8 @@ Author: Your Name
 
 // Enqueue scripts and styles
 function sbp_enqueue_scripts() {
-    wp_enqueue_style('sbp-style', plugin_dir_url(__FILE__) . 'assets/style.css');
-    wp_enqueue_script('sbp-script', plugin_dir_url(__FILE__) . 'assets/script.js', array('jquery'), '1.0.3', true);
+    wp_enqueue_style('sbp-style', plugin_dir_url(__FILE__) . 'assets/style.css','', '1.0.5', 'all');
+    wp_enqueue_script('sbp-script', plugin_dir_url(__FILE__) . 'assets/script.js', array('jquery'), '1.0.4', true);
     wp_localize_script('sbp-script', 'sbp_ajax', array(
         'ajax_url' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('sbp_nonce')
@@ -517,7 +517,7 @@ function sbp_booking_form_shortcode() {
     <div id="sbp-booking-form">
         <form id="sbp-form">
             <label for="sbp-staff">Select Staff Member:</label>
-            <select id="sbp-staff" name="staff" required>
+            <select id="sbp-staff" name="staff" required >
                 <option value="">Select</option>
                 <?php
                 global $wpdb;
@@ -529,15 +529,15 @@ function sbp_booking_form_shortcode() {
             </select>
 
             <label for="sbp-service">Select Service:</label>
-            <select id="sbp-service" name="service" required>
+            <select id="sbp-service" name="service" required disabled>
                 <option value="">Select</option>
             </select>
 
             <label for="sbp-date">Select Date:</label>
-            <input type="date" id="sbp-date" name="date" required>
+            <input type="date" id="sbp-date" name="date" required disabled>
 
             <label for="sbp-time">Select Time:</label>
-            <select id="sbp-time" name="time" required>
+            <select id="sbp-time" name="time" required disabled>
                 <option value="">Select</option>
             </select>
 
@@ -550,7 +550,7 @@ function sbp_booking_form_shortcode() {
             <label for="sbp-telephone">Telephone:</label>
             <input type="tel" id="sbp-telephone" name="telephone" required>
 
-            <button type="submit">Book Now</button>
+            <button id="booking-plu-submit" class="butn-with-disable" type="submit" disabled >Book Now</button>
         </form>
         <div id="sbp-message"></div>
     </div>

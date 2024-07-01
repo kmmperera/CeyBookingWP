@@ -1,9 +1,9 @@
 #sbp-booking-form {
-    max-width: 600px;
+    max-width: 350px;
     margin: 0 auto;
     padding: 20px;
-    border: 1px solid #ccc;
-    background-color: #f9f9f9;
+ 
+    background-color: #fff;
 }
 
 #sbp-booking-form label {
@@ -14,20 +14,21 @@
 
 #sbp-booking-form input, #sbp-booking-form select, #sbp-booking-form button {
     width: 100%;
-    padding: 8px;
+    padding: 12px;
     margin-bottom: 16px;
+    border-radius: 4px;
     box-sizing: border-box;
 }
 
 #sbp-booking-form button {
-    background-color: #0073aa;
+    background-color: #17BC59;
     color: #fff;
     border: none;
     cursor: pointer;
 }
 
 #sbp-booking-form button:hover {
-    background-color: #005177;
+    background-color: #19B300;
 }
 
 #sbp-message.success {
@@ -36,4 +37,10 @@
 
 #sbp-message.error {
     color: red;
+}
+
+.butn-with-disable:disabled{
+
+    opacity: 0.6;
+    cursor: not-allowed !important;
 }

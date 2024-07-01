@@ -4,6 +4,7 @@ jQuery(document).ready(function($) {
     $('#sbp-staff').change(function() {
         var staff_id = $(this).val();
         if (staff_id) {
+          
             $.ajax({
                 url: sbp_ajax.ajax_url,
                 type: 'POST',
@@ -20,6 +21,8 @@ jQuery(document).ready(function($) {
                             options += '<option value="' + service.id + '">' + service.service_name + '</option>';
                         });
                         $('#sbp-service').html(options);
+                        $('#sbp-service').prop('disabled',false);
+                        $('#sbp-date').prop('disabled',false);
                     } else {
                         $('#sbp-service').html('<option value="">No services found</option>');
                     }
@@ -53,6 +56,11 @@ jQuery(document).ready(function($) {
                             options += '<option value="' + slot + '">' + slot + '</option>';
                         });
                         $('#sbp-time').html(options);
+                      
+                        
+                        $('#sbp-time').prop('disabled',false);
+                        $('#sbp-date').prop('disabled',false);
+                        $('#booking-plu-submit').prop('disabled',false);
                     } else {
                         $('#sbp-time').html('<option value="">No slots available</option>');
                     }
